@@ -1,0 +1,59 @@
+name: Native Image
+on:
+  release:
+    types: [published]
+jobs:
+  native-image:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        libc: [glibc, musl]
+        include:
+          - os: ubuntu-latest
+            libc: glibc
+            uploaded_filename: scalafmt-report-linux-glibc
+            local_path: target/native-image/scalafmt-report
+            env:
+              NATIVE_IMAGE_STATIC: true
+          - os: ubuntu-latest
+            libc: musl
+            uploaded_filename: scalafmt-report-linux-musl
+            local_path: target/native-image/scalafmt-report
+            env:
+              NATIVE_IMAGE_STATIC: true
+              NATIVE_IMAGE_MUSL: /home/runner/work/scalafmt-report/bundle
+    env: ${{ matrix.env }}
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: olafurpg/setup-scala@v10
+        with:
+          java-version: graalvm-ce-java11@21.0.0
+      - run: git fetch --tags || true
+      - name: Install musl packages
+        run: sudo apt-get install musl-tools
+        if: matrix.libc == 'musl'
+      - name: Symlink libz for musl
+        run: sudo ln -s /usr/lib/x86_64-linux-gnu/libz.a /usr/lib/x86_64-linux-musl/
+        if: matrix.libc == 'musl'
+      - name: Build binaries
+        run: sbt nativeImage
+        shell: bash
+      - name: Upload assets
+        uses: actions/upload-artifact@v2
+        with:
+          path: ${{ matrix.local_path }}
+          name: ${{ matrix.uploaded_filename }}
+      - name: Upload release
+        if: github.event_name == 'release'
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ${{ matrix.local_path }}
+          asset_name: ${{ matrix.uploaded_filename }}
+          asset_content_type: application/zip
