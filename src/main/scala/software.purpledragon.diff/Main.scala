@@ -1,7 +1,10 @@
 package software.purpledragon.diff
 
+import software.purpledragon.diff.github.GitHubEventParser
+
 import java.io.File
 import java.nio.file.Paths
+import scala.util.{Failure, Success}
 
 object Main extends App {
   if (args.isEmpty) {
@@ -19,7 +22,27 @@ object Main extends App {
 
   val errors = FormatErrors(inputFile, basePath)
 
-  errors.invalidFiles foreach { file =>
+  // filter by PR
+
+  val filteredFiles = sys.env.get("GITHUB_EVENT_PATH") match {
+    case Some(eventPath) =>
+      GitHubEventParser.parseAndExtractPrFiles(new File(eventPath)) match {
+        case Success(prFiles) =>
+          errors.invalidFiles filter { path =>
+            prFiles.contains(path.filename)
+          }
+
+        case Failure(_) =>
+          Console.println("::warning could not filter errors by PR")
+          errors.invalidFiles
+      }
+
+    case None =>
+      // don't filter
+      errors.invalidFiles
+  }
+
+  filteredFiles foreach { file =>
     file.failures foreach { line =>
       Console.println(s"::error file=${file.filename},line=$line::Incorrectly formatted line(s)")
     }
