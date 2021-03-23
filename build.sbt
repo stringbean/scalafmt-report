@@ -1,9 +1,12 @@
 name := "scalafmt-report"
 
-version := "1.0.0"
+version := "1.1.0-alpha"
 scalaVersion := "2.13.4"
 
 libraryDependencies ++= Seq(
+  "com.softwaremill.sttp.client3" %% "core" % "3.1.9",
+  "com.softwaremill.sttp.client3" %% "json4s" % "3.1.9",
+  "org.json4s" %% "json4s-native" % "3.6.11",
   "org.scalatest" %% "scalatest" % "3.2.3" % Test
 )
 
