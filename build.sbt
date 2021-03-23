@@ -1,6 +1,6 @@
 name := "scalafmt-report"
 
-version := "1.1.0-alpha"
+version := "1.1.0-alpha.2"
 scalaVersion := "2.13.4"
 
 libraryDependencies ++= Seq(
