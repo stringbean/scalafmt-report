@@ -23,3 +23,4 @@ nativeImageOptions ++= {
       .map(_ => "--static")
       .toSeq
 }
+nativeImageOptions += "--no-fallback"
